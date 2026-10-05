@@ -13,20 +13,53 @@
         android:title="Settings"
         android:titleTextColor="@android:color/white" />
 
-        <TextView
-            android:id="@+id/libraryPath"
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginHorizontal="16dp"
-            android:text="No directory selected"
-            android:textColor="@color/text"
-            android:textSize="14sp" />
+            android:orientation="vertical"
+            android:padding="16dp">
 
-        <Button
-            android:id="@+id/chooseDirectory"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_margin="16dp"
-            android:text="Choose library directory" />
+            <TextView
+                android:id="@+id/song_name"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="No song selected"
+                android:textSize="16sp" />
+
+            <Button
+                android:id="@+id/pick_song"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Select song" />
+
+            <Button
+                android:id="@+id/play_song"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:enabled="false"
+                android:text="Play" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="24dp"
+                android:text="Alarm at"
+                android:textSize="16sp" />
+
+            <SeekBar
+                android:id="@+id/alarm_level"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:max="100"
+                android:progress="80" />
+
+            <TextView
+                android:id="@+id/alarm_level_text"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="80%"
+                android:textSize="16sp" />
+
+        </LinearLayout>
 
 </LinearLayout>
