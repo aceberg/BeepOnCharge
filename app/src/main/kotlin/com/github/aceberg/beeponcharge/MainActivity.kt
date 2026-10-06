@@ -4,7 +4,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
-import android.media.MediaPlayer
+import android.graphics.Color
 import android.net.Uri
 import android.os.Bundle
 import android.view.Menu
@@ -18,9 +18,24 @@ import androidx.appcompat.app.AppCompatActivity
 class MainActivity : AppCompatActivity() {
 
     private lateinit var batteryText: TextView
+    private lateinit var songName: TextView
+    private lateinit var player: Player
 
-    private var mediaPlayer: MediaPlayer? = null
     private var alarmPlayed = false
+    private var alarmLevel = 80
+
+    override fun onResume() {
+        super.onResume()
+        updateSettings()
+    }
+
+    private fun updateSettings() {
+        val settings = getSharedPreferences("settings", MODE_PRIVATE)
+        alarmLevel = settings.getInt("alarm_level", 80)
+        alarmPlayed = false
+
+        songName.text = player.getSongName()
+    }
 
     private val batteryReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
@@ -33,16 +48,17 @@ class MainActivity : AppCompatActivity() {
                 status == android.os.BatteryManager.BATTERY_STATUS_CHARGING ||
                 status == android.os.BatteryManager.BATTERY_STATUS_FULL
 
-            if (!charging) {
-                alarmPlayed = false
-                return
-            }
+            batteryText.setTextColor(
+                when {
+                    level < 30 -> Color.RED
+                    !charging -> Color.GRAY
+                    level < alarmLevel -> Color.GREEN
+                    else -> 0xFFFF9800.toInt() // orange
+                }
+            )
 
-            val settings = getSharedPreferences("settings", MODE_PRIVATE)
-            val alarmLevel = settings.getInt("alarm_level", 80)
-
-            if (level >= alarmLevel && !alarmPlayed) {
-                playAlarm()
+            if (level >= alarmLevel && !alarmPlayed && charging) {
+                player.play()
                 alarmPlayed = true
             }
         }
@@ -57,10 +73,19 @@ class MainActivity : AppCompatActivity() {
 
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
 
+        player = Player(this)
+
         batteryText = findViewById(R.id.battery)
+        songName = findViewById(R.id.song_name)
+
+        updateSettings()
 
         findViewById<Button>(R.id.stop).setOnClickListener {
-            stopAlarm()
+            player.stop()
+        }
+
+        findViewById<Button>(R.id.exit).setOnClickListener {
+            finish()
         }
 
         registerReceiver(
@@ -69,31 +94,8 @@ class MainActivity : AppCompatActivity() {
         )
     }
 
-    private fun playAlarm() {
-        val songUri = getSharedPreferences("settings", MODE_PRIVATE)
-            .getString("song_uri", null) ?: return
-
-        stopAlarm()
-
-        mediaPlayer = MediaPlayer.create(
-            this,
-            Uri.parse(songUri)
-        )
-
-        mediaPlayer?.setOnCompletionListener {
-            stopAlarm()
-        }
-
-        mediaPlayer?.start()
-    }
-
-    private fun stopAlarm() {
-        mediaPlayer?.release()
-        mediaPlayer = null
-    }
-
     override fun onDestroy() {
-        stopAlarm()
+        player.stop()
         unregisterReceiver(batteryReceiver)
         super.onDestroy()
     }

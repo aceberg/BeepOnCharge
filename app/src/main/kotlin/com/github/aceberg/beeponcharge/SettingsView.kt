@@ -1,11 +1,8 @@
 package com.github.aceberg.beeponcharge
 
 import android.content.Intent
-import android.database.Cursor
-import android.media.MediaPlayer
 import android.net.Uri
 import android.os.Bundle
-import android.provider.OpenableColumns
 import android.widget.Button
 import android.widget.SeekBar
 import android.widget.TextView
@@ -20,7 +17,7 @@ class SettingsView : AppCompatActivity() {
     private lateinit var alarmLevel: SeekBar
     private lateinit var alarmLevelText: TextView
 
-    private var mediaPlayer: MediaPlayer? = null
+    private lateinit var player: Player
 
     private val pickSong = registerForActivityResult(
         ActivityResultContracts.OpenDocument()
@@ -36,7 +33,7 @@ class SettingsView : AppCompatActivity() {
                 .putString("song_uri", it.toString())
                 .apply()
 
-            songName.text = getSongName(it)
+            songName.text = player.getSongName()
             playSong.isEnabled = true
         }
     }
@@ -48,28 +45,25 @@ class SettingsView : AppCompatActivity() {
         val toolbar = findViewById<Toolbar>(R.id.toolbar)
         setSupportActionBar(toolbar)
 
+        player = Player(this)
+
         songName = findViewById(R.id.song_name)
         playSong = findViewById(R.id.play_song)
 
         val settings = getSharedPreferences("settings", MODE_PRIVATE)
 
-        val savedSong = settings.getString("song_uri", null)
 
-        if (savedSong != null) {
-            songName.text = getSongName(Uri.parse(savedSong))
-            playSong.isEnabled = true
-        } else {
-            songName.text = "No song selected"
-            playSong.isEnabled = false
-        }
+        songName.text = player.getSongName()
+
 
         findViewById<Button>(R.id.pick_song).setOnClickListener {
             pickSong.launch(arrayOf("audio/*"))
         }
 
         playSong.setOnClickListener {
-            if (mediaPlayer?.isPlaying == true) {
-                stopSong()
+            if (player.isPlaying()) {
+                player.stop()
+                playSong.text = "Play"
             } else {
                 playSelectedSong()
             }
@@ -107,70 +101,15 @@ class SettingsView : AppCompatActivity() {
     }
 
     private fun playSelectedSong() {
-        val savedSong = getSharedPreferences("settings", MODE_PRIVATE)
-            .getString("song_uri", null) ?: return
-
-        stopSong()
-
-        try {
-            mediaPlayer = MediaPlayer()
-
-            mediaPlayer?.setDataSource(
-                this,
-                Uri.parse(savedSong)
-            )
-
-            mediaPlayer?.setOnPreparedListener {
-                it.start()
-                playSong.text = "Stop"
-            }
-
-            mediaPlayer?.setOnCompletionListener {
-                stopSong()
-            }
-
-            mediaPlayer?.setOnErrorListener { _, what, extra ->
-                playSong.text = "Play"
-                true
-            }
-
-            mediaPlayer?.prepareAsync()
-
-        } catch (e: Exception) {
-            mediaPlayer?.release()
-            mediaPlayer = null
+        player.play() {
             playSong.text = "Play"
         }
-    }
 
-    private fun stopSong() {
-        mediaPlayer?.release()
-        mediaPlayer = null
-        playSong.text = "Play"
-    }
-
-    private fun getSongName(uri: Uri): String {
-        var name = "Unknown song"
-
-        val cursor: Cursor? = contentResolver.query(
-            uri,
-            arrayOf(OpenableColumns.DISPLAY_NAME),
-            null,
-            null,
-            null
-        )
-
-        cursor?.use {
-            if (it.moveToFirst()) {
-                name = it.getString(0)
-            }
-        }
-
-        return name
+        playSong.text = "Stop"
     }
 
     override fun onDestroy() {
-        stopSong()
+        player.stop()
         super.onDestroy()
     }
 }

@@ -9,7 +9,7 @@ android {
 
     defaultConfig {
         applicationId = "com.github.aceberg.beeponcharge"
-        minSdk = 26
+        minSdk = 28
         targetSdk = 36
 
         versionCode = 1
