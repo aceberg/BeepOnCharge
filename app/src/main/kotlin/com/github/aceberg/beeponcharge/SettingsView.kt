@@ -44,6 +44,12 @@ class SettingsView : AppCompatActivity() {
 
         val toolbar = findViewById<Toolbar>(R.id.toolbar)
         setSupportActionBar(toolbar)
+        supportActionBar?.title = "Settings"
+        supportActionBar?.setDisplayHomeAsUpEnabled(true)
+
+        toolbar.setNavigationOnClickListener {
+            finish()
+        }
 
         player = Player(this)
 
@@ -65,7 +71,11 @@ class SettingsView : AppCompatActivity() {
                 player.stop()
                 playSong.text = "Play"
             } else {
-                playSelectedSong()
+                player.play() {
+                    playSong.text = "Play"
+                }
+
+                playSong.text = "Stop"
             }
         }
 
@@ -98,14 +108,6 @@ class SettingsView : AppCompatActivity() {
                 }
             }
         )
-    }
-
-    private fun playSelectedSong() {
-        player.play() {
-            playSong.text = "Play"
-        }
-
-        playSong.text = "Stop"
     }
 
     override fun onDestroy() {

@@ -4,4 +4,8 @@
     <color name="primary_dark">#1cc94a</color>
     <color name="background">#FFFBFE</color>
     <color name="text">#1C1B1F</color>
+    <color name="battery_red">#F44336</color>
+    <color name="battery_green">#1cc94a</color>
+    <color name="battery_orange">#FF9800</color>
+    <color name="battery_grey">#808080</color>
 </resources>

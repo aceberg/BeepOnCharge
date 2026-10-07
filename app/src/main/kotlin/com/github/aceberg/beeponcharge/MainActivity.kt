@@ -4,8 +4,6 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
-import android.graphics.Color
-import android.net.Uri
 import android.os.Bundle
 import android.view.Menu
 import android.view.MenuItem
@@ -14,6 +12,7 @@ import android.widget.Button
 import android.widget.TextView
 import androidx.appcompat.widget.Toolbar
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 
 class MainActivity : AppCompatActivity() {
 
@@ -27,41 +26,16 @@ class MainActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         updateSettings()
+
+        registerReceiver(
+            batteryReceiver,
+            IntentFilter(Intent.ACTION_BATTERY_CHANGED)
+        )
     }
 
-    private fun updateSettings() {
-        val settings = getSharedPreferences("settings", MODE_PRIVATE)
-        alarmLevel = settings.getInt("alarm_level", 80)
-        alarmPlayed = false
-
-        songName.text = player.getSongName()
-    }
-
-    private val batteryReceiver = object : BroadcastReceiver() {
-        override fun onReceive(context: Context, intent: Intent) {
-            val level = intent.getIntExtra("level", -1)
-            val status = intent.getIntExtra("status", -1)
-
-            batteryText.text = "$level%"
-
-            val charging =
-                status == android.os.BatteryManager.BATTERY_STATUS_CHARGING ||
-                status == android.os.BatteryManager.BATTERY_STATUS_FULL
-
-            batteryText.setTextColor(
-                when {
-                    level < 30 -> Color.RED
-                    !charging -> Color.GRAY
-                    level < alarmLevel -> Color.GREEN
-                    else -> 0xFFFF9800.toInt() // orange
-                }
-            )
-
-            if (level >= alarmLevel && !alarmPlayed && charging) {
-                player.play()
-                alarmPlayed = true
-            }
-        }
+    override fun onPause() {
+        super.onPause()
+        unregisterReceiver(batteryReceiver)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -78,8 +52,6 @@ class MainActivity : AppCompatActivity() {
         batteryText = findViewById(R.id.battery)
         songName = findViewById(R.id.song_name)
 
-        updateSettings()
-
         findViewById<Button>(R.id.stop).setOnClickListener {
             player.stop()
         }
@@ -87,11 +59,47 @@ class MainActivity : AppCompatActivity() {
         findViewById<Button>(R.id.exit).setOnClickListener {
             finish()
         }
+    }
 
-        registerReceiver(
-            batteryReceiver,
-            IntentFilter(Intent.ACTION_BATTERY_CHANGED)
+    private val batteryReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent) {
+            val level = intent.getIntExtra("level", -1)
+            val status = intent.getIntExtra("status", -1)
+
+            if (level >= 0) {
+                updateBattery(level, status)
+            }
+        }
+    }
+
+    private fun updateBattery(level: Int, status: Int) {
+        batteryText.text = "$level%"
+
+        val charging =
+            status == android.os.BatteryManager.BATTERY_STATUS_CHARGING ||
+            status == android.os.BatteryManager.BATTERY_STATUS_FULL
+
+        batteryText.setTextColor(
+            when {
+                level < 30 -> ContextCompat.getColor(this@MainActivity, R.color.battery_red)
+                !charging -> ContextCompat.getColor(this@MainActivity, R.color.battery_grey)
+                level < alarmLevel -> ContextCompat.getColor(this@MainActivity, R.color.battery_green)
+                else -> ContextCompat.getColor(this@MainActivity, R.color.battery_orange)
+            }
         )
+
+        if (level >= alarmLevel && !alarmPlayed && charging) {
+            player.play()
+            alarmPlayed = true
+        }
+    }
+
+    private fun updateSettings() {
+        val settings = getSharedPreferences("settings", MODE_PRIVATE)
+        alarmLevel = settings.getInt("alarm_level", 80)
+        alarmPlayed = false
+
+        songName.text = player.getSongName()
     }
 
     override fun onDestroy() {
